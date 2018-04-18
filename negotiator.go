@@ -21,6 +21,23 @@ func GetDomain(user string) (string, string) {
 	return user, domain
 }
 
+// In some cases we get two Www-Authenticate headers from the Web server. One header containing the challenge and one containing Negotiate.. This results in a 401.
+func GetChallengeHeader(h http.Header, key string) string {
+	if v := h[key]; len(v) > 0 {
+		for _, k := range v {
+			if ( strings.HasPrefix(string(k), "NTLM") ) {
+				return k
+			}
+		}
+
+		return v[0]
+	} else {
+		return v[0]
+	}
+
+	return ""
+}
+
 //Negotiator is a http.Roundtripper decorator that automatically
 //converts basic authentication to NTLM/Negotiate authentication when appropriate.
 type Negotiator struct{ http.RoundTripper }
@@ -112,7 +129,8 @@ func (l Negotiator) RoundTrip(req *http.Request) (res *http.Response, err error)
 		}
 
 		// receive challenge?
-		resauth = authheader(res.Header.Get("Www-Authenticate"))
+		challengeHeader := GetChallengeHeader(res.Header, "Www-Authenticate")
+		resauth = authheader(challengeHeader)
 		challengeMessage, err := resauth.GetData()
 		if err != nil {
 			return nil, err
