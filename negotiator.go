@@ -25,7 +25,7 @@ func GetDomain(user string) (string, string) {
 func GetChallengeHeader(h http.Header, key string) string {
 	if v := h[key]; len(v) > 0 {
 		for _, k := range v {
-			if ( strings.HasPrefix(string(k), "NTLM") ) {
+			if ( strings.HasPrefix(string(k), "NTLM ") ) {
 				return k
 			}
 		}
