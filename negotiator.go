@@ -3,6 +3,7 @@ package ntlmssp
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -22,20 +23,18 @@ func GetDomain(user string) (string, string) {
 }
 
 // In some cases we get two Www-Authenticate headers from the Web server. One header containing the challenge and one containing Negotiate.. This results in a 401.
-func GetChallengeHeader(h http.Header, key string) string {
+func GetChallengeHeader(h http.Header, key string) (string, error) {
 	if v := h[key]; len(v) > 0 {
 		for _, k := range v {
-			if ( strings.HasPrefix(string(k), "NTLM ") ) {
-				return k
+			if strings.HasPrefix(k, "NTLM ") || strings.HasPrefix(k, "Negotiate ") {
+				return k, nil
 			}
 		}
 
-		return v[0]
-	} else {
-		return v[0]
+		return v[0], nil
 	}
 
-	return ""
+	return "", fmt.Errorf("No challenge found")
 }
 
 //Negotiator is a http.Roundtripper decorator that automatically
@@ -129,7 +128,11 @@ func (l Negotiator) RoundTrip(req *http.Request) (res *http.Response, err error)
 		}
 
 		// receive challenge?
-		challengeHeader := GetChallengeHeader(res.Header, "Www-Authenticate")
+		challengeHeader, err := GetChallengeHeader(res.Header, "Www-Authenticate")
+		if err != nil {
+			return nil, err
+		}
+
 		resauth = authheader(challengeHeader)
 		challengeMessage, err := resauth.GetData()
 		if err != nil {
