@@ -25,13 +25,11 @@ func GetDomain(user string) (string, string) {
 func GetChallengeHeader(h http.Header, key string) string {
 	if v := h[key]; len(v) > 0 {
 		for _, k := range v {
-			if ( strings.HasPrefix(string(k), "NTLM ") ) {
+			if strings.HasPrefix(k, "NTLM ") || strings.HasPrefix(k, "Negotiate ") {
 				return k
 			}
 		}
 
-		return v[0]
-	} else {
 		return v[0]
 	}
 
@@ -155,7 +153,7 @@ func (l Negotiator) RoundTrip(req *http.Request) (res *http.Response, err error)
 
 		req.Body = ioutil.NopCloser(bytes.NewReader(body.Bytes()))
 
-		res, err = rt.RoundTrip(req)
+		return rt.RoundTrip(req)
 	}
 
 	return res, err
