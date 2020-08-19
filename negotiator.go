@@ -128,7 +128,6 @@ func (l Negotiator) RoundTrip(req *http.Request) (res *http.Response, err error)
 
 		// receive challenge?
 		challengeHeader := GetChallengeHeader(res.Header, "Www-Authenticate")
-
 		resauth = authheader(challengeHeader)
 		challengeMessage, err := resauth.GetData()
 		if err != nil {
