@@ -21,11 +21,21 @@ func GetDomain(user string) (string, string) {
 	return user, domain
 }
 
-// In some cases we get two Www-Authenticate headers from the Web server. One header containing the challenge and one containing Negotiate.. This results in a 401.
+// The web server might include several Www-Authenticate headers. In this case we have to choose which one to use.
 func GetChallengeHeader(h http.Header, key string) string {
+	// When both 'NTLM' and 'Negotiate' are present, 'Negotiate' shall be preferred:
+	//  The HTTP auth-scheme of 'Negotiate' uses Kerberos, which is the more recent authentication scheme and
+	//  preferred over NTLM. NTLM, NT Lan Manger, is an older authentication scheme but is still used and supported.
 	if v := h[key]; len(v) > 0 {
+		// Look for 'Negotiate <key>' with a minimum key length of 8 characters.
 		for _, k := range v {
-			if strings.HasPrefix(k, "NTLM ") || strings.HasPrefix(k, "Negotiate ") {
+			if strings.HasPrefix(k, "Negotiate") && len(k) > 18 {
+				return k
+			}
+		}
+		// Look for 'NTLM <key>' with a minimum key length of 8 characters.
+		for _, k := range v {
+			if strings.HasPrefix(k, "NTLM") && len(k) > 13 {
 				return k
 			}
 		}
